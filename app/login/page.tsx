@@ -7,18 +7,29 @@ import { createClient } from '@/lib/supabase';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import toast from 'react-hot-toast';
+import { useAuth } from '@/lib/auth-context';
 import { LogIn, Mail, Lock } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const supabase = createClient();
+  const { profile, loading: authLoading } = useAuth();
 
   useEffect(() => { setMounted(true); }, []);
+
+  // Once auth context has the profile (after sign-in), redirect to correct page
+  useEffect(() => {
+    if (!signingIn || authLoading || !profile) return;
+    if (profile.role === 'admin') router.replace('/admin/dashboard');
+    else if (profile.role === 'program_head') router.replace('/program-head/results');
+    else router.replace('/panelist/dashboard');
+  }, [signingIn, authLoading, profile]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,11 +47,9 @@ export default function LoginPage() {
     }
 
     if (data.user) {
-      // Let the auth context load the profile and route guard redirect to correct dashboard
-      router.push('/');
+      // Mark as signing in — the effect above will redirect once profile loads
+      setSigningIn(true);
     }
-
-    setLoading(false);
   };
 
   return (
