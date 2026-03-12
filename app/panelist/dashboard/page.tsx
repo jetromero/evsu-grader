@@ -20,13 +20,14 @@ interface SessionWithMeta {
 }
 
 export default function PanelistDashboard() {
-  const { profile } = useAuth();
+  const { profile, loading: authLoading } = useAuth();
   const [sessions, setSessions] = useState<SessionWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
   useEffect(() => {
-    if (!profile) return;
+    if (authLoading) return;
+    if (!profile) { setLoading(false); return; }
 
     const fetchSessions = async () => {
       // Get assigned sessions
@@ -79,7 +80,7 @@ export default function PanelistDashboard() {
     };
 
     fetchSessions();
-  }, [profile]);
+  }, [profile, authLoading]);
 
   const totalGraded = sessions.reduce((s, x) => s + x.graded_count, 0);
   const totalStudents = sessions.reduce((s, x) => s + x.student_count, 0);

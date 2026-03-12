@@ -1,12 +1,31 @@
 'use client';
 
+import { useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { SidebarProvider, useSidebar } from '@/lib/sidebar-context';
 import Navbar from '@/components/Navbar';
 
 function DashboardInner({ children }: { children: React.ReactNode }) {
-  const { loading, loggingOut } = useAuth();
+  const { loading, loggingOut, profile } = useAuth();
   const { collapsed } = useSidebar();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  // Role-based route guard — redirect to the correct section after auth loads
+  useEffect(() => {
+    if (loading || loggingOut || !profile) return;
+    const onAdmin = pathname.startsWith('/admin');
+    const onPanelist = pathname.startsWith('/panelist');
+    const onProgramHead = pathname.startsWith('/program-head');
+    if (profile.role === 'admin' && !onAdmin) {
+      router.replace('/admin/dashboard');
+    } else if (profile.role === 'program_head' && !onProgramHead) {
+      router.replace('/program-head/results');
+    } else if (profile.role === 'panelist' && !onPanelist) {
+      router.replace('/panelist/dashboard');
+    }
+  }, [loading, profile, pathname]);
 
   if (loading) {
     return (
