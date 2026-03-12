@@ -36,29 +36,8 @@ export default function LoginPage() {
     }
 
     if (data.user) {
-      // Retry up to 3 times in case of cold-start latency on Vercel
-      let profile = null;
-      for (let i = 0; i < 3; i++) {
-        const { data: p } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', data.user.id)
-          .single();
-        if (p) { profile = p; break; }
-        await new Promise(r => setTimeout(r, 500));
-      }
-
-      if (profile?.role === 'admin') {
-        router.push('/admin/dashboard');
-      } else if (profile?.role === 'program_head') {
-        router.push('/program-head/results');
-      } else if (profile?.role === 'panelist') {
-        router.push('/panelist/dashboard');
-      } else {
-        // Profile still null — let DashboardLayout route guard handle it
-        toast.error('Could not load your profile. Please try again.');
-        await supabase.auth.signOut();
-      }
+      // Let the auth context load the profile and route guard redirect to correct dashboard
+      router.push('/');
     }
 
     setLoading(false);
