@@ -34,10 +34,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadedUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // onAuthStateChange fires INITIAL_SESSION immediately on subscribe,
-    // which replaces the need for a separate getSession() call.
+    // getSession resolves immediately from storage — makes loading=false fast on refresh
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+        loadedUserIdRef.current = session.user.id;
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        setProfile(data);
+      }
+      setLoading(false);
+    };
+    init();
+
+    // onAuthStateChange handles login/logout after initial load
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event: AuthChangeEvent, session: Session | null) => {
+      async (event: AuthChangeEvent, session: Session | null) => {
+        // Skip INITIAL_SESSION — already handled by getSession above
+        if (event === 'INITIAL_SESSION') return;
         if (session?.user) {
           setUser(session.user);
           // Skip profile re-fetch if it's the same user (e.g. TOKEN_REFRESHED)
